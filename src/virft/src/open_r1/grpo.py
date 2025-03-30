@@ -60,21 +60,21 @@ def extract_bbox(response):
         # Extract the content between the start tag and end tag
         start_idx = input_str.find(start_tag) + len(start_tag)
         end_idx = input_str.find(end_tag)
-        
+
         # If end_tag is not found (i.e., the string is truncated), assume it should be at the end
         if end_idx == -1:
             end_idx = len(input_str)
-    
+
         content_str = input_str[start_idx:end_idx]
-    
+
         # Check if it ends with a closing bracket, if not, fix it
         if not content_str.endswith("]"):
             # If the string is truncated, remove the incomplete part
             content_str = content_str.rsplit("},", 1)[0] + "}]"
-    
+
         # Replace single quotes with double quotes for valid JSON
         content_str_corrected = content_str.replace("'", '"')
-    
+
         # Convert the corrected string to a list of dictionaries (JSON format)
         try:
             bbox_list = json.loads(content_str_corrected)
@@ -92,25 +92,25 @@ def calculate_iou(bbox1, bbox2):
     yi1 = max(y1, y1_2)
     xi2 = min(x2, x2_2)
     yi2 = min(y2, y2_2)
-    
+
     if xi2 <= xi1 or yi2 <= yi1:
         return 0.0
-    
+
     intersection_area = (xi2 - xi1) * (yi2 - yi1)
-    
+
     area1 = (x2 - x1) * (y2 - y1)
     area2 = (x2_2 - x1_2) * (y2_2 - y1_2)
 
     union_area = area1 + area2 - intersection_area
-    
+
     iou = intersection_area / union_area
     return iou
 
 def sort_and_calculate_iou(list1, list2, iou_threshold=0.5):
     list2_sorted = sorted(list2, key=lambda x: x['Confidence'], reverse=True)
-    
+
     iou_results = []
-    
+
     matched_list1_indices = set()
 
     for bbox2 in list2_sorted:
@@ -129,22 +129,22 @@ def sort_and_calculate_iou(list1, list2, iou_threshold=0.5):
             matched_list1_indices.add(matched_bbox1)
         else:
             iou_results.append((0, bbox2['Confidence']))
-    
+
     ### [(0.7192676547515258, 1.0), (0, 0.7)]
     return iou_results
 
 def remove_duplicates(bbox_list):
     seen = set()
     unique_bboxes = []
-    
+
     for bbox in bbox_list:
         # Convert the position tuple to a tuple for set hashing
         position_tuple = tuple(bbox['Position'])
-        
+
         if position_tuple not in seen:
             seen.add(position_tuple)
             unique_bboxes.append(bbox)
-    
+
     return unique_bboxes
 
 # V1
@@ -163,7 +163,7 @@ def compute_reward_iou(iou_results):
 
         iou_reward += temp_iou_reward
         confidence_reward += temp_confidence_reward
-        
+
     iou_reward = iou_reward/len(iou_results)
     confidence_reward = confidence_reward/len(iou_results)
     return iou_reward
@@ -184,7 +184,7 @@ def compute_reward_iou_v2(iou_results, len_gt):
 
         iou_reward += temp_iou_reward
         confidence_reward += temp_confidence_reward
-        
+
     if len_gt>=len(iou_results):
         iou_reward = iou_reward/len_gt
     else:
@@ -206,7 +206,7 @@ def compute_reward_confidence(iou_results):
 
         iou_reward += temp_iou_reward
         confidence_reward += temp_confidence_reward
-        
+
     iou_reward = iou_reward/len(iou_results)
     confidence_reward = confidence_reward/len(iou_results)
     return confidence_reward
@@ -243,9 +243,9 @@ def accuracy_reward_iou(completions, solution, **kwargs):
                 student_answer = '<answer>'+student_answer+'</answer>'
 
                 # fix format error
-                student_answer = student_answer.replace("[[",'[')  
-                student_answer = student_answer.replace("]]",']')  
-                student_answer = student_answer.replace("\n",'')  
+                student_answer = student_answer.replace("[[",'[')
+                student_answer = student_answer.replace("]]",']')
+                student_answer = student_answer.replace("\n",'')
                 # [{'Position': [254, 303, 291, 365], 'Confidence': 0.9}, {'Position': [100, 100, 200, 200], 'Confidence': 0.8}]
                 ground_truth_bbox = extract_bbox(ground_truth)
                 student_answer_bbox = extract_bbox(student_answer)
@@ -261,7 +261,7 @@ def accuracy_reward_iou(completions, solution, **kwargs):
                         reward = 1.0
             except Exception:
                 pass  # Keep reward as 0.0 if both methods fail
-                
+
         rewards.append(reward)
         # import pdb; pdb.set_trace()
         if os.getenv("DEBUG_MODE") == "true":
@@ -276,7 +276,7 @@ def accuracy_reward_iou(completions, solution, **kwargs):
                     f.write(f"ground_truth_bbox: {ground_truth_bbox}\n")
                     if student_answer_bbox!=None:
                         f.write(f"iou_results: {iou_results}\n")
-        show_flage = 0 
+        show_flage = 0
     return rewards
 
 def accuracy_reward_confidence(completions, solution, **kwargs):
@@ -330,7 +330,7 @@ def accuracy_reward_confidence(completions, solution, **kwargs):
                         reward = 0.0
             except Exception:
                 pass  # Keep reward as 0.0 if both methods fail
-                
+
         rewards.append(reward)
         # import pdb; pdb.set_trace()
         if os.getenv("DEBUG_MODE") == "true":
@@ -345,7 +345,7 @@ def accuracy_reward_confidence(completions, solution, **kwargs):
                     f.write(f"ground_truth_bbox: {ground_truth_bbox}\n")
                     if student_answer_bbox!=None:
                         f.write(f"iou_results: {iou_results}\n")
-        show_flage = 0 
+        show_flage = 0
     return rewards
 
 
@@ -379,10 +379,10 @@ def main(script_args, training_args, model_args):
     reward_funcs = [reward_funcs_registry[func] for func in script_args.reward_funcs]
 
     # Load the dataset from huggingface
-    # dataset = load_dataset(script_args.dataset_name, name=script_args.dataset_config)
-    # Load the dataset from local disk
-    from datasets import DatasetDict
-    dataset = DatasetDict.load_from_disk(script_args.dataset_name)
+    dataset = load_dataset(script_args.dataset_name, name=script_args.dataset_config)
+    # # Load the dataset from local disk
+    # from datasets import DatasetDict
+    # dataset = DatasetDict.load_from_disk(script_args.dataset_name)
 
 
     # Format into conversation
@@ -418,7 +418,6 @@ def main(script_args, training_args, model_args):
         dataset = dataset.map(make_conversation)
         dataset = dataset.remove_columns("messages")
 
-    
     trainer_cls = Qwen2VLGRPOTrainer if not training_args.use_vllm else Qwen2VLGRPOVLLMTrainer
     print("using: ", trainer_cls)
 
@@ -437,6 +436,7 @@ def main(script_args, training_args, model_args):
     )
 
     # Train and push the model to the Hub
+    print('start training')
     trainer.train()
 
     # Save and push to hub
