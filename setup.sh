@@ -1,3 +1,8 @@
+# create virtual environment
+uv venv
+source .venv/bin/activate
+
+# install local files
 cd src/virft
 uv pip install -e ".[dev]"
 
