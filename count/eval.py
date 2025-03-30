@@ -60,9 +60,13 @@ def inference(model, processor, inputs):
 
 
 def evaluate(response, example):
-    content_match = re.search(r'<answer>(.*?)</answer>', response)
-    pred = int(content_match.group(1).strip() if content_match else response.strip())
-    correct = pred == example['number']
+    try:
+        content_match = re.search(r'<answer>(.*?)</answer>', response)
+        pred = int(content_match.group(1).strip() if content_match else response.strip())
+        correct = pred == example['number']
+    except Exception as e:
+        print(f'{response=} failed with exception {e=}')
+        correct, pred = 0, None
     return pred, correct
 
 def main():
@@ -74,9 +78,13 @@ def main():
     model = Qwen2VLForConditionalGeneration.from_pretrained(model_path, torch_dtype="auto", device_map=device)
     model.eval()
 
-    responses, predictions, n_correct = [], [], 0
-    for example in tqdm(ds):
+    responses, predictions, oom_examples, n_correct = [], [], [], 0
+    for i, example in enumerate(tqdm(ds)):
         inputs = prep_inputs(processor, example, device)
+        if inputs['input_ids'].shape[1] > 1500:
+            oom_examples.append(i)
+            print(f'skipping {i}th example because it is too big')
+            continue
         response = inference(model, processor, inputs)
         pred, correct = evaluate(response, example)
 
