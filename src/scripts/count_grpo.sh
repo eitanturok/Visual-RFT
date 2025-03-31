@@ -4,7 +4,7 @@ export LOG_PATH="./debug_log_2b_GRPO_count_countbenchqa_train.txt"
 
 # export DATA_PATH=./share_data/ViRFT_CountBenchQA_train   ### your local dataset downloading from huggingface
 export DATA_PATH=eturok/CountBenchQA
-export CKPT_PATH=Qwen/Qwen2-VL-2B-Instruct    ### Qwen2-VL-2B checkpoint path
+export CKPT_PATH="Qwen/Qwen2-VL-2B-Instruct"    ### Qwen2-VL-2B checkpoint path
 export SAVE_PATH=./share_models/Qwen2-VL-2B-Instruct_GRPO_Count   ### save path
 
 torchrun --nproc_per_node="2" \
@@ -15,7 +15,7 @@ torchrun --nproc_per_node="2" \
     src/open_r1/grpo.py \
     --output_dir ${SAVE_PATH}  \
     --model_name_or_path ${CKPT_PATH} \
-    --dataset_name ${DATA_PATH} \
+    --dataset_name "eturok/CountBenchQA" \
     --deepspeed local_scripts/zero3.json \
     --max_prompt_length 1024 \
     --per_device_train_batch_size 1 \
